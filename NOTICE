@@ -1,0 +1,18 @@
+ChessMimic Public Non-Commercial Release
+
+Unless a file explicitly states different terms, the PolyForm Noncommercial
+License 1.0.0 in `LICENSE` applies to:
+
+- source code;
+- trained model checkpoints;
+- model scaler files;
+- common-move databases;
+- sample data and sample artifacts included in the repository;
+- documentation.
+
+The full private training datasets used to produce the included models are not
+part of this public release.
+
+Third-party dependencies and vendored third-party source or documentation remain
+under their own licenses. Review dependency metadata before redistributing a
+modified build.

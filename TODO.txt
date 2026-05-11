@@ -1,0 +1,15 @@
+# TODO
+
+- Improve resignation modeling.
+- Improve the clock model.
+- Continue tuning move, clock, and winner model quality.
+- Improve public setup documentation as release feedback comes in privately.
+
+# Completed
+
+- Faster training dataloaders.
+- Clock-aware model inputs.
+- PGN export.
+- Win probability output.
+- Brier-score model refits.
+- Next.js frontend migration.

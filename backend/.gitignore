@@ -1,0 +1,12 @@
+.env
+logs/
+*.log
+.coverage
+htmlcov/
+__pycache__/
+
+# Local deployment/scratch helpers
+nginx-setup.md
+setup-cert-permissions.sh
+smol.py
+start-https-noauth.sh

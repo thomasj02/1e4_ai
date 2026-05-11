@@ -1,0 +1,322 @@
+{
+  "boundaries": [
+    0.0,
+    1.0,
+    2.0,
+    3.0,
+    4.0,
+    5.0,
+    6.0,
+    7.0,
+    8.0,
+    9.0,
+    10.0,
+    11.0,
+    12.0,
+    13.0,
+    14.0,
+    15.0,
+    16.0,
+    17.0,
+    18.0,
+    19.0,
+    20.0,
+    21.0,
+    22.0,
+    23.0,
+    24.0,
+    25.0,
+    26.0,
+    27.0,
+    32.0,
+    40.0,
+    Infinity
+  ],
+  "n_buckets": 30,
+  "scheme": "linear_quantile",
+  "time_control": "blitz",
+  "bucket_probabilities": [
+    0.07001,
+    0.214695,
+    0.199122,
+    0.115613,
+    0.08052,
+    0.058891,
+    0.046077,
+    0.036136,
+    0.028557,
+    0.02306,
+    0.018702,
+    0.01542,
+    0.012627,
+    0.01047,
+    0.008859,
+    0.007482,
+    0.006348,
+    0.005454,
+    0.004659,
+    0.004134,
+    0.003529,
+    0.003216,
+    0.002808,
+    0.002415,
+    0.002061,
+    0.001801,
+    0.001579,
+    0.005859,
+    0.004942,
+    0.004954
+  ],
+  "bucket_widths": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    5.0,
+    8.0,
+    null
+  ],
+  "bucket_empirical_distributions": [
+    {
+      "type": "seconds",
+      "distribution": {
+        "0": 100.0
+      }
+    },
+    {
+      "type": "seconds",
+      "distribution": {
+        "1": 100.0
+      }
+    },
+    {
+      "type": "seconds",
+      "distribution": {
+        "2": 100.0
+      }
+    },
+    {
+      "type": "seconds",
+      "distribution": {
+        "3": 100.0
+      }
+    },
+    {
+      "type": "seconds",
+      "distribution": {
+        "4": 100.0
+      }
+    },
+    {
+      "type": "seconds",
+      "distribution": {
+        "5": 100.0
+      }
+    },
+    {
+      "type": "seconds",
+      "distribution": {
+        "6": 100.0
+      }
+    },
+    {
+      "type": "seconds",
+      "distribution": {
+        "7": 100.0
+      }
+    },
+    {
+      "type": "seconds",
+      "distribution": {
+        "8": 100.0
+      }
+    },
+    {
+      "type": "seconds",
+      "distribution": {
+        "9": 100.0
+      }
+    },
+    {
+      "type": "seconds",
+      "distribution": {
+        "10": 100.0
+      }
+    },
+    {
+      "type": "seconds",
+      "distribution": {
+        "11": 100.0
+      }
+    },
+    {
+      "type": "seconds",
+      "distribution": {
+        "12": 100.0
+      }
+    },
+    {
+      "type": "seconds",
+      "distribution": {
+        "13": 100.0
+      }
+    },
+    {
+      "type": "seconds",
+      "distribution": {
+        "14": 100.0
+      }
+    },
+    {
+      "type": "seconds",
+      "distribution": {
+        "15": 100.0
+      }
+    },
+    {
+      "type": "seconds",
+      "distribution": {
+        "16": 100.0
+      }
+    },
+    {
+      "type": "seconds",
+      "distribution": {
+        "17": 100.0
+      }
+    },
+    {
+      "type": "seconds",
+      "distribution": {
+        "18": 100.0
+      }
+    },
+    {
+      "type": "seconds",
+      "distribution": {
+        "19": 100.0
+      }
+    },
+    {
+      "type": "seconds",
+      "distribution": {
+        "20": 100.0
+      }
+    },
+    {
+      "type": "seconds",
+      "distribution": {
+        "21": 100.0
+      }
+    },
+    {
+      "type": "seconds",
+      "distribution": {
+        "22": 100.0
+      }
+    },
+    {
+      "type": "seconds",
+      "distribution": {
+        "23": 100.0
+      }
+    },
+    {
+      "type": "seconds",
+      "distribution": {
+        "24": 100.0
+      }
+    },
+    {
+      "type": "seconds",
+      "distribution": {
+        "25": 100.0
+      }
+    },
+    {
+      "type": "seconds",
+      "distribution": {
+        "26": 100.0
+      }
+    },
+    {
+      "type": "seconds",
+      "distribution": {
+        "27": 25.0,
+        "28": 21.15,
+        "29": 20.17,
+        "30": 17.85,
+        "31": 15.82
+      }
+    },
+    {
+      "type": "seconds",
+      "distribution": {
+        "32": 16.9,
+        "33": 15.68,
+        "34": 14.65,
+        "35": 12.3,
+        "36": 12.04,
+        "37": 10.54,
+        "38": 9.29,
+        "39": 8.6
+      }
+    },
+    {
+      "type": "frequent_values",
+      "distribution": {
+        "40.0": 7.69,
+        "41.0": 7.0,
+        "42.0": 6.42,
+        "45.0": 5.57,
+        "44.0": 5.47,
+        "43.0": 5.35,
+        "46.0": 4.8,
+        "47.0": 4.52,
+        "48.0": 3.98,
+        "51.0": 3.25,
+        "49.0": 3.13,
+        "50.0": 3.05,
+        "54.0": 2.44,
+        "52.0": 2.3,
+        "53.0": 2.24,
+        "55.0": 2.16,
+        "58.0": 1.92,
+        "56.0": 1.76,
+        "57.0": 1.61,
+        "64.0": 1.59
+      },
+      "coverage": 76.26
+    }
+  ],
+  "statistics": {
+    "total_samples": 1000000,
+    "mean_time": 4.777537,
+    "median_time": 3.0,
+    "p95_time": 16.0,
+    "p99_time": 31.0
+  }
+}

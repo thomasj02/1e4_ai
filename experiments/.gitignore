@@ -1,0 +1,15 @@
+# Experiment output directories
+rating_experiment_*/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Coverage files
+.coverage
+htmlcov/
+
+# Plots
+*.png
+*.pdf
+*.jpg

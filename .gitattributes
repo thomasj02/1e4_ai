@@ -1,0 +1,2 @@
+# Git LFS tracking for large model files
+*.ckpt filter=lfs diff=lfs merge=lfs -text

@@ -1,0 +1,347 @@
+# ChessMimic Data and Training Pipeline
+
+This file describes the end-to-end path from public Lichess PGN dumps to the
+model artifacts loaded by the backend. The examples use one rating band
+(`1600_1700`) and one held-out validation month; repeat the same steps for each
+rating band you want to support.
+
+## What Gets Built
+
+The pipeline produces three model families:
+
+- Move model: predicts the next move from the position, recent moves, rating,
+  and clock context.
+- Clock model: predicts thinking time buckets for a position.
+- Winner model: predicts game outcome probabilities from a position.
+
+The PGN converters write BAGZ datasets. The Python scripts then fit feature
+scalers, generate clock buckets, and train PyTorch Lightning checkpoints.
+
+## Prerequisites
+
+Run commands from `Training/` unless noted otherwise.
+
+```bash
+cd /path/to/chessmimic/Training
+source ../.venv/bin/activate
+
+./cmake_configure.sh --ninja
+cmake --build build --parallel "$(nproc)" --target \
+  pgn_to_bagz \
+  pgn_to_clock_bagz \
+  pgn_to_winner_bagz \
+  chessmimic_core
+```
+
+Use a data directory outside the repo. The generated files are large and should
+not be committed.
+
+```bash
+export CHESSMIMIC_DATA_ROOT=/absolute/path/to/chessmimic-data
+export MIN_RATING=1600
+export MAX_RATING=1700
+export RATING_BAND="${MIN_RATING}_${MAX_RATING}"
+
+mkdir -p \
+  "$CHESSMIMIC_DATA_ROOT/raw" \
+  "$CHESSMIMIC_DATA_ROOT/split/train" \
+  "$CHESSMIMIC_DATA_ROOT/split/val" \
+  "$CHESSMIMIC_DATA_ROOT/move_model/$RATING_BAND" \
+  "$CHESSMIMIC_DATA_ROOT/clock_model/$RATING_BAND" \
+  "$CHESSMIMIC_DATA_ROOT/winner_model/$RATING_BAND" \
+  "$CHESSMIMIC_DATA_ROOT/tmp"
+```
+
+## 1. Download PGN Dumps
+
+Download monthly standard rated Lichess dumps from:
+
+https://database.lichess.org/
+
+Use older months for training and hold out a later month for validation. Example:
+
+```bash
+aria2c -s14 -x14 -k100M --continue \
+  -d "$CHESSMIMIC_DATA_ROOT/raw" \
+  https://database.lichess.org/standard/lichess_db_standard_rated_2025-01.pgn.zst
+
+aria2c -s14 -x14 -k100M --continue \
+  -d "$CHESSMIMIC_DATA_ROOT/raw" \
+  https://database.lichess.org/standard/lichess_db_standard_rated_2025-02.pgn.zst
+```
+
+## 2. Split and Filter PGNs
+
+`split_pgn.py` keeps rated blitz games where both players are inside the rating
+range, decompresses `.pgn.zst`, and writes smaller `.pgn.lz4` shards. The
+converters can process either an individual shard or a directory of shards.
+
+Training split:
+
+```bash
+python split_pgn.py \
+  --pgn "$CHESSMIMIC_DATA_ROOT/raw/lichess_db_standard_rated_2025-01.pgn.zst" \
+  --min_rating "$MIN_RATING" \
+  --max_rating "$MAX_RATING" \
+  --auto_output_dir "$CHESSMIMIC_DATA_ROOT/split/train" \
+  --num_files 36
+```
+
+Validation split:
+
+```bash
+python split_pgn.py \
+  --pgn "$CHESSMIMIC_DATA_ROOT/raw/lichess_db_standard_rated_2025-02.pgn.zst" \
+  --min_rating "$MIN_RATING" \
+  --max_rating "$MAX_RATING" \
+  --auto_output_dir "$CHESSMIMIC_DATA_ROOT/split/val" \
+  --num_files 8
+```
+
+For multiple training months, run the training command once per raw dump. The
+auto output directory includes the month in the generated folder name.
+
+## 3. Build Move-Model Data
+
+The move converter has two modes:
+
+- Training mode writes `common_moves.txt` for positions with too many samples.
+- Validation mode uses that training common-moves file and skips those positions.
+
+Create the training BAGZ:
+
+```bash
+./build/pgn_to_bagz \
+  --pgn "$CHESSMIMIC_DATA_ROOT/split/train" \
+  --bagz "$CHESSMIMIC_DATA_ROOT/move_model/$RATING_BAND/train.bagz" \
+  --common_moves "$CHESSMIMIC_DATA_ROOT/move_model/$RATING_BAND/common_moves.txt" \
+  --write_common_moves \
+  --min_rating "$MIN_RATING" \
+  --max_rating "$MAX_RATING" \
+  --min_clock 0 \
+  --temp_dir "$CHESSMIMIC_DATA_ROOT/tmp/move_train" \
+  --threads "$(nproc)"
+```
+
+Create the validation BAGZ:
+
+```bash
+./build/pgn_to_bagz \
+  --pgn "$CHESSMIMIC_DATA_ROOT/split/val" \
+  --bagz "$CHESSMIMIC_DATA_ROOT/move_model/$RATING_BAND/val.bagz" \
+  --common_moves "$CHESSMIMIC_DATA_ROOT/move_model/$RATING_BAND/common_moves.txt" \
+  --skip_common_moves \
+  --min_rating "$MIN_RATING" \
+  --max_rating "$MAX_RATING" \
+  --min_clock 0 \
+  --temp_dir "$CHESSMIMIC_DATA_ROOT/tmp/move_val" \
+  --threads "$(nproc)"
+```
+
+Fit move-model scalers from the training BAGZ only:
+
+```bash
+python FitScalersFromBagz.py \
+  --bagz "$CHESSMIMIC_DATA_ROOT/move_model/$RATING_BAND/train.bagz" \
+  --output "$CHESSMIMIC_DATA_ROOT/move_model/$RATING_BAND/scalers.pkl"
+```
+
+Train the move model:
+
+```bash
+python MoveTrainer.py \
+  --train_bagz_path "$CHESSMIMIC_DATA_ROOT/move_model/$RATING_BAND/train.bagz" \
+  --val_bagz_path "$CHESSMIMIC_DATA_ROOT/move_model/$RATING_BAND/val.bagz" \
+  --scalers "$CHESSMIMIC_DATA_ROOT/move_model/$RATING_BAND/scalers.pkl" \
+  --tensorboard_name "move_$RATING_BAND" \
+  --batch_size 2048 \
+  --val_check_interval 25000 \
+  --max_epochs 30 \
+  --disable_wandb
+```
+
+Remove `--disable_wandb` if you have Weights & Biases configured.
+
+## 4. Build Clock-Model Data
+
+The clock converter also has train/validation modes. Training writes common
+position files; validation uses the FEN-only common-position file to keep the
+validation set from being dominated by common positions.
+
+Create the training BAGZ and common-position files:
+
+```bash
+./build/pgn_to_clock_bagz \
+  --pgn "$CHESSMIMIC_DATA_ROOT/split/train" \
+  --output "$CHESSMIMIC_DATA_ROOT/clock_model/$RATING_BAND/train.bagz" \
+  --common-positions-with-history "$CHESSMIMIC_DATA_ROOT/clock_model/$RATING_BAND/common_positions_with_history.jsonl.gz" \
+  --common-positions-fen-only "$CHESSMIMIC_DATA_ROOT/clock_model/$RATING_BAND/common_positions_fen_only.jsonl.gz" \
+  --write-common-positions \
+  --max-positions-per-key 25 \
+  --temp-dir "$CHESSMIMIC_DATA_ROOT/tmp/clock_train" \
+  --shuffle \
+  --memory-limit 32 \
+  --threads "$(nproc)"
+```
+
+Create the validation BAGZ:
+
+```bash
+./build/pgn_to_clock_bagz \
+  --pgn "$CHESSMIMIC_DATA_ROOT/split/val" \
+  --output "$CHESSMIMIC_DATA_ROOT/clock_model/$RATING_BAND/val.bagz" \
+  --common-positions-fen-only "$CHESSMIMIC_DATA_ROOT/clock_model/$RATING_BAND/common_positions_fen_only.jsonl.gz" \
+  --skip-common-positions \
+  --temp-dir "$CHESSMIMIC_DATA_ROOT/tmp/clock_val" \
+  --memory-limit 32 \
+  --threads "$(nproc)"
+```
+
+Fit clock scalers and generate clock bucket boundaries from the training BAGZ:
+
+```bash
+python FitClockScalersFromBagz.py \
+  --bagz "$CHESSMIMIC_DATA_ROOT/clock_model/$RATING_BAND/train.bagz" \
+  --output "$CHESSMIMIC_DATA_ROOT/clock_model/$RATING_BAND/scalers.pkl" \
+  --num_samples 1000000
+
+python generate_clock_buckets.py \
+  --bagz_path "$CHESSMIMIC_DATA_ROOT/clock_model/$RATING_BAND/train.bagz" \
+  --output_path "$CHESSMIMIC_DATA_ROOT/clock_model/$RATING_BAND/clock_buckets.json" \
+  --n-buckets 30 \
+  --max-samples 1000000
+```
+
+Train the clock model:
+
+```bash
+python ClockTrainer.py \
+  --train_bagz_path "$CHESSMIMIC_DATA_ROOT/clock_model/$RATING_BAND/train.bagz" \
+  --val_bagz_path "$CHESSMIMIC_DATA_ROOT/clock_model/$RATING_BAND/val.bagz" \
+  --scalers "$CHESSMIMIC_DATA_ROOT/clock_model/$RATING_BAND/scalers.pkl" \
+  --bucket_boundaries "$CHESSMIMIC_DATA_ROOT/clock_model/$RATING_BAND/clock_buckets.json" \
+  --tensorboard_name "clock_$RATING_BAND" \
+  --batch_size 2048 \
+  --val_check_interval 25000 \
+  --max_epochs 30 \
+  --disable_wandb
+```
+
+To fine-tune from a move-model checkpoint, add:
+
+```bash
+--pretrained_checkpoint /path/to/move/model.ckpt --fine_tune_lr 1e-4
+```
+
+## 5. Build Winner-Model Data
+
+Create the winner training BAGZ:
+
+```bash
+./build/pgn_to_winner_bagz \
+  --output "$CHESSMIMIC_DATA_ROOT/winner_model/$RATING_BAND/train.bagz" \
+  --min-rating "$MIN_RATING" \
+  --max-rating "$MAX_RATING" \
+  --temp-dir "$CHESSMIMIC_DATA_ROOT/tmp/winner_train" \
+  --shuffle \
+  --memory 32 \
+  --threads "$(nproc)" \
+  "$CHESSMIMIC_DATA_ROOT/split/train"
+```
+
+Create the winner validation BAGZ:
+
+```bash
+./build/pgn_to_winner_bagz \
+  --output "$CHESSMIMIC_DATA_ROOT/winner_model/$RATING_BAND/val.bagz" \
+  --min-rating "$MIN_RATING" \
+  --max-rating "$MAX_RATING" \
+  --temp-dir "$CHESSMIMIC_DATA_ROOT/tmp/winner_val" \
+  --memory 32 \
+  --threads "$(nproc)" \
+  "$CHESSMIMIC_DATA_ROOT/split/val"
+```
+
+Fit winner scalers:
+
+```bash
+python FitWinnerScalersFromBagz.py \
+  --bagz "$CHESSMIMIC_DATA_ROOT/winner_model/$RATING_BAND/train.bagz" \
+  --output "$CHESSMIMIC_DATA_ROOT/winner_model/$RATING_BAND/scalers.pkl" \
+  --num_samples 1000000
+```
+
+Train the winner model:
+
+```bash
+python WinnerTrainer.py \
+  --train_bagz_path "$CHESSMIMIC_DATA_ROOT/winner_model/$RATING_BAND/train.bagz" \
+  --val_bagz_path "$CHESSMIMIC_DATA_ROOT/winner_model/$RATING_BAND/val.bagz" \
+  --scalers "$CHESSMIMIC_DATA_ROOT/winner_model/$RATING_BAND/scalers.pkl" \
+  --tensorboard_name "winner_$RATING_BAND" \
+  --batch_size 2048 \
+  --val_check_interval 25000 \
+  --max_epochs 30 \
+  --disable_wandb
+```
+
+## 6. Package Artifacts for the Backend
+
+The backend discovers models under `CHESSMIMIC_MODELS_PATH` using this layout:
+
+```text
+models/
+  move_model/
+    1600_1700/
+      model.ckpt
+      scalers.pkl
+      common_moves.txt
+  clock_model/
+    1600_1700/
+      model.ckpt
+      scalers.pkl
+      clock_buckets.json
+  winner_model/
+    1600_1700/
+      model.ckpt
+      scalers.pkl
+```
+
+After training, copy or symlink the best checkpoint from each trainer's
+`tensorboard/<run_name>/version_*/checkpoints/` directory to `model.ckpt` in the
+matching model directory. Then copy the scaler and auxiliary files:
+
+```bash
+export CHESSMIMIC_MODELS_PATH=/absolute/path/to/models
+mkdir -p \
+  "$CHESSMIMIC_MODELS_PATH/move_model/$RATING_BAND" \
+  "$CHESSMIMIC_MODELS_PATH/clock_model/$RATING_BAND" \
+  "$CHESSMIMIC_MODELS_PATH/winner_model/$RATING_BAND"
+
+cp "$CHESSMIMIC_DATA_ROOT/move_model/$RATING_BAND/scalers.pkl" \
+  "$CHESSMIMIC_MODELS_PATH/move_model/$RATING_BAND/scalers.pkl"
+cp "$CHESSMIMIC_DATA_ROOT/move_model/$RATING_BAND/common_moves.txt" \
+  "$CHESSMIMIC_MODELS_PATH/move_model/$RATING_BAND/common_moves.txt"
+
+cp "$CHESSMIMIC_DATA_ROOT/clock_model/$RATING_BAND/scalers.pkl" \
+  "$CHESSMIMIC_MODELS_PATH/clock_model/$RATING_BAND/scalers.pkl"
+cp "$CHESSMIMIC_DATA_ROOT/clock_model/$RATING_BAND/clock_buckets.json" \
+  "$CHESSMIMIC_MODELS_PATH/clock_model/$RATING_BAND/clock_buckets.json"
+
+cp "$CHESSMIMIC_DATA_ROOT/winner_model/$RATING_BAND/scalers.pkl" \
+  "$CHESSMIMIC_MODELS_PATH/winner_model/$RATING_BAND/scalers.pkl"
+```
+
+Copy the three selected checkpoints manually as `model.ckpt`; the exact source
+path depends on which validation checkpoint you choose.
+
+## Notes and Sanity Checks
+
+- Keep validation data from a month that was not used for training.
+- Fit scalers and clock buckets from training BAGZ files only.
+- Use the training common-moves/common-position files when building validation
+  BAGZ files.
+- `--memory-limit` and `--memory` are in GB. Lower them if conversion causes
+  memory pressure; raise them on large machines.
+- Start with one month and a narrow rating band to smoke-test the pipeline before
+  processing a full dataset.

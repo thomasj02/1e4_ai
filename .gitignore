@@ -1,0 +1,94 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Test coverage
+.coverage
+*.coverage
+htmlcov/
+.pytest_cache/
+coverage/
+
+# Large data files
+*.pgn.lz4
+*.pgn.gz
+*.pgn.zst
+*.bagz
+Training/data/
+Training/tensorboard/
+Training/wandb/
+Training/wandb_sfc/
+Training/move_prob_diffs/
+Training/move_prob_diffs_optimized/
+
+# Maia2 auto-downloaded checkpoints
+maia2_models/
+
+# Benchmark run outputs
+experiments/maia2_benchmark/results/
+
+# Virtual environment
+.venv/
+venv/
+*/.venv/
+*/venv/
+
+# Node modules
+node_modules/
+*/node_modules/
+
+# Build directories
+dist/
+*/dist/
+build/
+*/build/
+cmake-build-*/
+*/cmake-build-*/
+Training/build-*/
+Training/test_output*/
+Training/test_temp/
+Training/*.so
+
+# Playwright reports
+playwright-report/
+*/playwright-report/
+test-results/
+*/test-results/
+.playwright-mcp/
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+
+# Environment variables
+.env
+*/.env*
+!.env.example
+!*/.env.example
+.mcp.json
+.claude/settings.local.json
+**/.claude/settings.local.json
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Runtime logs and generated local outputs
+logs/
+*/logs/
+*.log
+*.log.*
+backend/server.log
+backend/backend.log
+backend/clock_probability_distributions.png
+backend/glicko2_progression_*.png
+lichess-full.png
+lichess-small.png
+
+
+**/.claude/settings.local.json
+
+**/CLAUDE.local.md

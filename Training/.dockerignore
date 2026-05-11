@@ -1,0 +1,9 @@
+data/
+tensorboard/
+wandb/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+.git

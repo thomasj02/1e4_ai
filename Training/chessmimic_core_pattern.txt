@@ -1,0 +1,68 @@
+# Pattern file for chessmimic_core stubs
+
+# Add prefix with better module docstring and imports
+chessmimic_core.__prefix__:
+    from typing import Dict, List, Sequence, Set, Tuple, Union, overload
+    from numpy.typing import NDArray
+    from numpy import uint8, int64, float32
+    
+    """
+    ChessMimic Core Module - C++ accelerated functions for chess data processing.
+    
+    This module provides optimized implementations of key chess-related functions
+    for the ChessMimic project, including tokenization, move processing, and 
+    data preparation for neural network training.
+    """
+
+# Improve tokenize function signature
+chessmimic_core.tokenize:
+    def tokenize(fen: str) -> NDArray[uint8]:
+        """
+        Tokenize a FEN string into an array of tokens.
+        
+        Args:
+            fen: FEN (Forsyth-Edwards Notation) string representing a chess position
+            
+        Returns:
+            NumPy array of uint8 tokens representing the position
+            
+        Raises:
+            RuntimeError: If the FEN string is invalid or tokenization fails
+        """
+
+# Improve prepare_recent_moves_tokens function signature
+chessmimic_core.prepare_recent_moves_tokens:
+    def prepare_recent_moves_tokens(recent_moves: Sequence[str]) -> NDArray[int64]:
+        """
+        Prepare recent moves tokens array.
+        
+        Args:
+            recent_moves: List of UCI move strings (e.g., "e2e4")
+            
+        Returns:
+            NumPy array of int64 token indices representing the moves,
+            padded or truncated to a fixed length of 12
+            
+        Raises:
+            RuntimeError: If any move is invalid or not found in MOVE_TO_ACTION
+        """
+
+# Improve recent_moves_and_fen_to_inputs function signature
+chessmimic_core.recent_moves_and_fen_to_inputs:
+    def recent_moves_and_fen_to_inputs(recent_moves: Sequence[str], fen: str) -> Tuple[NDArray[int64], NDArray[int64], NDArray[float32]]:
+        """
+        Convert recent moves and FEN to model inputs.
+        
+        Args:
+            recent_moves: List of UCI move strings (e.g., "e2e4")
+            fen: FEN (Forsyth-Edwards Notation) string representing a chess position
+            
+        Returns:
+            Tuple of:
+            - recent_moves_tokens: NumPy array of int64 token indices for moves
+            - fen_tokens: NumPy array of int64 token indices for the FEN string
+            - move_mask: NumPy array of float32 values indicating legal moves (1.0 for legal, 0.0 for illegal)
+            
+        Raises:
+            RuntimeError: If the FEN string is invalid, any move is invalid, or processing fails
+        """

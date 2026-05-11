@@ -1,0 +1,126 @@
+/* Bootstrap dark theme enhancements */
+[data-bs-theme="dark"] {
+  --bs-body-bg: #1a1a1a;
+  --bs-body-color: #e9ecef;
+  --bs-card-bg: #242424;
+  --bs-border-color: #495057;
+  --bs-dark-rgb: 26, 26, 26;
+}
+
+/* Chess-specific theme overrides */
+[data-theme="dark"] {
+  --color-base-100: #1a1a1a;
+  --color-base-200: #242424;
+  --color-base-300: #333333;
+}
+
+[data-theme="night"] {
+  --color-base-100: #0f0f23;
+  --color-base-200: #1a1a2e;
+  --color-base-300: #16213e;
+}
+
+:root {
+  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Font variables */
+:root {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  min-width: 320px;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+/* Fix for iOS Safari viewport height issues */
+@supports (-webkit-touch-callout: none) {
+  body {
+    min-height: -webkit-fill-available;
+  }
+  
+  html {
+    height: -webkit-fill-available;
+  }
+}
+
+/* Use CSS environment variables for safe areas */
+body {
+  /* Use smaller viewport height to account for Safari UI */
+  min-height: 100vh;
+  min-height: 100dvh; /* Dynamic viewport height - better for mobile browsers */
+  
+  /* Account for safe areas on iOS */
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* iOS Safari fixes - applies to all iOS devices */
+@supports (-webkit-touch-callout: none) {
+  /* Reduce height to account for Safari UI on all screen sizes */
+  .main-content-wrapper {
+    max-height: calc(100vh - var(--navbar-height, 0px) - 50px);
+    max-height: calc(100dvh - var(--navbar-height, 0px) - 50px);
+    max-height: calc(var(--vvh, var(--vh, 1vh)) * 100 - var(--navbar-height, 0px) - 50px);
+  }
+  
+  /* On devices with navbar (tablets and larger) */
+  @media screen and (min-width: 768px) {
+    .main-content-wrapper {
+      max-height: calc(100vh - var(--navbar-height, 56px) - 50px);
+      max-height: calc(100dvh - var(--navbar-height, 56px) - 50px);
+      max-height: calc(var(--vvh, var(--vh, 1vh)) * 100 - var(--navbar-height, 56px) - 50px);
+    }
+  }
+  
+  /* Additional fix for the chess game container */
+  .main-content-wrapper > div {
+    max-height: 100%;
+    height: 100%;
+  }
+  
+  /* Reduce padding on game container to give more room */
+  .main-content-wrapper > div > div {
+    padding: 0.5rem !important;
+  }
+}
+
+/* Ensure proper height calculation with navbar */
+.main-content-wrapper {
+  min-height: 0; /* Important for flexbox children */
+  flex: 1 1 auto;
+  overflow: hidden;
+}
+
+/* Remove default link styles */
+
+/* Remove default button styles */
+
+/* Remove default input styles */
+
+/* Position utilities */
+.eval-bar-vertical-center-line {
+  top: 50%;
+}
+
+/* Next.js wrapper elements should not interfere with body centering */
+#__next {
+  display: contents;
+}
+
+/* Mimic the #root element from the original app */
+main {
+  width: 100%;
+  height: 100%;
+}
